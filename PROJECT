@@ -1,0 +1,10 @@
+domain: cluster.x-k8s.io
+repo: github.com/multicloudlab/cluster-api-provider-ibmvpccloud
+resources:
+- group: infrastructure
+  kind: IBMVPCCluster
+  version: v1alpha3
+- group: infrastructure
+  kind: IBMVPCMachine
+  version: v1alpha3
+version: "2"
