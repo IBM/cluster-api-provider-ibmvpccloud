@@ -3,6 +3,7 @@ package scope
 import (
 	"context"
 
+	"github.com/IBM/go-sdk-core/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
 	infrav1 "github.com/multicloudlab/cluster-api-provider-ibmvpccloud/api/v1alpha3"
@@ -83,6 +84,7 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	if err != nil {
 		return nil, err
 	} else {
+		s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID)
 		return vpc, nil
 	}
 }
@@ -108,6 +110,18 @@ func (s *ClusterScope) ensureVPCUnique(vpcName string) (*vpcv1.VPC, error) {
 		}
 		return nil, nil
 	}
+}
+
+func (s *ClusterScope) updateDefaultSG(sgID string) error {
+	options := &vpcv1.CreateSecurityGroupRuleOptions{}
+	options.SetSecurityGroupID(sgID)
+	options.SetSecurityGroupRulePrototype(&vpcv1.SecurityGroupRulePrototype{
+		Direction: core.StringPtr("inbound"),
+		Protocol:  core.StringPtr("all"),
+		IPVersion: core.StringPtr("ipv4"),
+	})
+	_, _, err := s.IBMVPCClients.VPCService.CreateSecurityGroupRule(options)
+	return err
 }
 
 func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
@@ -187,6 +201,15 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 		},
 	})
 	subnet, _, err := s.IBMVPCClients.VPCService.CreateSubnet(options)
+	if subnet != nil {
+		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone)
+		if err != nil {
+			return subnet, err
+		}
+		if pgw != nil {
+			s.attachPublicGateWay(*subnet.ID, *pgw.ID)
+		}
+	}
 	return subnet, err
 }
 
@@ -204,6 +227,28 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 		}
 		return nil, nil
 	}
+}
+
+func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string) (*vpcv1.PublicGateway, error) {
+	options := &vpcv1.CreatePublicGatewayOptions{}
+	options.SetVPC(&vpcv1.VPCIdentity{
+		ID: &vpcID,
+	})
+	options.SetZone(&vpcv1.ZoneIdentity{
+		Name: &zoneName,
+	})
+	publicGateway, _, err := s.IBMVPCClients.VPCService.CreatePublicGateway(options)
+	return publicGateway, err
+}
+
+func (s *ClusterScope) attachPublicGateWay(subnetID string, pgwID string) (*vpcv1.PublicGateway, error) {
+	options := &vpcv1.SetSubnetPublicGatewayOptions{}
+	options.SetID(subnetID)
+	options.SetPublicGatewayIdentity(&vpcv1.PublicGatewayIdentity{
+		ID: &pgwID,
+	})
+	publicGateway, _, err := s.IBMVPCClients.VPCService.SetSubnetPublicGateway(options)
+	return publicGateway, err
 }
 
 // PatchObject persists the cluster configuration and status.
