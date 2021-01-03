@@ -74,7 +74,7 @@ func NewMachineScope(params MachineScopeParams, iamEndpoint string, apiKey strin
 }
 
 func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
-	instanceReply, err := m.ensureInstanceUnique(m.IBMVPCMachine.Spec.Name)
+	instanceReply, err := m.ensureInstanceUnique(m.IBMVPCMachine.Name)
 	if err != nil {
 		return nil, err
 	} else {
@@ -92,7 +92,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 
 	options := &vpcv1.CreateInstanceOptions{}
 	instancePrototype := &vpcv1.InstancePrototype{
-		Name: &m.IBMVPCMachine.Spec.Name,
+		Name: &m.IBMVPCMachine.Name,
 		Image: &vpcv1.ImageIdentity{
 			ID: &m.IBMVPCMachine.Spec.Image,
 		},
@@ -122,7 +122,8 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	}
 
 	options.SetInstancePrototype(instancePrototype)
-	instance, _, err := m.IBMVPCClients.VPCService.CreateInstance(options)
+	instance, response, err := m.IBMVPCClients.VPCService.CreateInstance(options)
+	fmt.Printf("%v\n", response)
 	return instance, err
 }
 
