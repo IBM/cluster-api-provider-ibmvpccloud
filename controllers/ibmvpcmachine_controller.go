@@ -161,7 +161,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 			},
 		}
 		_, ok := machineScope.IBMVPCMachine.Labels[clusterv1.MachineControlPlaneLabelName]
-		machineScope.IBMVPCMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmvpc://%s-%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMVPCMachine.Spec.Name))
+		machineScope.IBMVPCMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmvpc://%s/%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMVPCMachine.Name))
 		if ok {
 			options := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
 			options.SetID(*machineScope.IBMVPCCluster.Status.APIEndpoint.FIPID)

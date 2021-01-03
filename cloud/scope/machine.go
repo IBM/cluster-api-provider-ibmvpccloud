@@ -80,7 +80,6 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	} else {
 		if instanceReply != nil {
 			//TODO need a resonable wraped error
-			fmt.Printf("MachineScope CreateMachine:%s,%s\n", *instanceReply.Name, *instanceReply.ID)
 			return instanceReply, nil
 		}
 	}
